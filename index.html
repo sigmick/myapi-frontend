@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-KyZXEAg3QhqLMpG8r+8fhAXLRk2vvoC2f3B09zVXn8CA5QIVfZOJ3BCsw2P0p/We"
+      crossorigin="anonymous"
+    />
+
+    <title>API TEST</title>
+    <style>
+      .center {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      .circle {
+        border-radius: 50%;
+      }
+      input[type='file'] {
+        opacity: 0; /* make transparent */
+        z-index: -1; /* move under anything else */
+        position: absolute; /* don't let it take up space */
+      }
+      input[type='file']:focus + label {
+        outline: 2px solid; /* example focus style */
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container m-5">
+      <div class="card p-3" style="width: 18rem">
+        <div style="height: 200px; background-color: #ccc" class="p-2">
+          <img id="profile-img" class="circle center hidden" src="" alt="" />
+        </div>
+        <h5 class="card-title">Profile Photo</h5>
+        <form id="upload-form">
+          <div class="form-group">
+            <input
+              type="file"
+              class="custom-file-input m-3"
+              id="fileinput"
+              name="file"
+            />
+          </div>
+          <button id="btn-file" class="btn btn-primary">Select Photo</button>
+        </form>
+      </div>
+    </div>
+
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-U1DAWAznBHeqEIlVSCgzq+c9gqGAJn5c/t99JyeKa9xxaYpSvHU5awsuZVVFIhvj"
+      crossorigin="anonymous"
+    ></script>
+
+    <script>
+      const upload = () => {
+        var formdata = new FormData();
+        formdata.append('file', document.getElementById('fileinput').files[0]);
+
+        // fetch('http://localhost:3000/upload', {
+          fetch('https://mick-api.herokuapp.com/upload', {
+          method: 'POST',
+          body: formdata,
+        })
+          .then(
+            (response) => response.json() // if the response is a JSON object
+          )
+          .then((data) => {
+            if (data.filename) {
+              document.getElementById('profile-img').src =
+                'https://mick-api.herokuapp.com/profile/img/' + data.filename;
+              document.getElementById('profile-img').style.height = '100%';
+              document.getElementById('profile-img').classList.remove('hidden');
+              localStorage.setItem(
+                'profilePhoto',
+                document.getElementById('profile-img').src
+              );
+            } else {
+              console.log(data.message);
+              alert(data.message);
+            }
+          })
+          .catch((error) => {
+            console.log(error);
+            alert(error);
+          });
+      };
+
+      document
+        .getElementById('btn-file')
+        .addEventListener('click', function () {
+          event.preventDefault();
+          document.getElementById('fileinput').click();
+        });
+
+      document
+        .getElementById('fileinput')
+        .addEventListener('change', upload, false);
+
+      const profilePhoto = localStorage.getItem('profilePhoto');
+      if (profilePhoto) {
+        document.getElementById('profile-img').src = profilePhoto;
+        document.getElementById('profile-img').style.height = '100%';
+        document.getElementById('profile-img').classList.remove('hidden');
+      }
+    </script>
+  </body>
+</html>

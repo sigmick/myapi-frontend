@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-KyZXEAg3QhqLMpG8r+8fhAXLRk2vvoC2f3B09zVXn8CA5QIVfZOJ3BCsw2P0p/We"
+      crossorigin="anonymous"
+    />
+
+    <title>Concept2</title>
+    <style>
+      .center {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      .circle {
+        border-radius: 50%;
+      }
+      input[type='file'] {
+        opacity: 0; /* make transparent */
+        z-index: -1; /* move under anything else */
+        position: absolute; /* don't let it take up space */
+      }
+      input[type='file']:focus + label {
+        outline: 2px solid; /* example focus style */
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container m-5">
+      <div class="card p-3" style="width: 18rem">
+        <h5 class="card-title">Concept2 Data</h5>
+        <form id="upload-form">
+          <div class="form-group">
+            <input
+              type="file"
+              class="custom-file-input m-3"
+              id="fileinput"
+              name="file"
+            />
+          </div>
+          <button id="btn-file" class="btn btn-primary">Select CSV File</button>
+        </form>
+      </div>
+
+      <div
+        id="chart-area-pace"
+        style="
+          width: 700px;
+          height: 300px;
+          box-shadow: 0 4px 10px 0 rgba(0, 0, 0, 0.25);
+        "
+      ></div>
+      <div
+        id="chart-area-heartrate"
+        style="
+          width: 700px;
+          height: 300px;
+          box-shadow: 0 4px 10px 0 rgba(0, 0, 0, 0.25);
+        "
+      ></div>
+      <div
+        id="chart-area-stroke"
+        style="
+          width: 700px;
+          height: 300px;
+          box-shadow: 0 4px 10px 0 rgba(0, 0, 0, 0.25);
+        "
+      ></div>
+      <div
+        id="chart-area-distance"
+        style="
+          width: 700px;
+          height: 300px;
+          box-shadow: 0 4px 10px 0 rgba(0, 0, 0, 0.25);
+        "
+      ></div>
+    </div>
+
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-U1DAWAznBHeqEIlVSCgzq+c9gqGAJn5c/t99JyeKa9xxaYpSvHU5awsuZVVFIhvj"
+      crossorigin="anonymous"
+    ></script>
+
+    <script
+      src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+      integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+      crossorigin="anonymous"
+    ></script>
+
+    <script
+      type="text/javascript"
+      src="https://www.gstatic.com/charts/loader.js"
+    ></script>
+    <script>
+      google.charts.load('current', { packages: ['corechart'] });
+
+      let conceptData = [];
+      const upload = () => {
+        var formdata = new FormData();
+        formdata.append('file', document.getElementById('fileinput').files[0]);
+
+        // fetch('http://localhost:3000/csvtojson', {
+        fetch('https://mick-api.herokuapp.com/csvtojson', {
+          method: 'POST',
+          body: formdata,
+        })
+          .then(
+            (response) => response.json() // if the response is a JSON object
+          )
+          .then((data) => {
+            console.log(data);
+            localStorage.setItem('lastData', JSON.stringify(data));
+            drawChart(data);
+          })
+          .catch((error) => {
+            console.log(error);
+            alert(error);
+          });
+      };
+
+      const drawChartPace = (data) => {
+        const chartData = [['distance', 'pace']];
+        data.forEach((el) => {
+          chartData.push([
+            parseFloat(el['Distance (meters)']),
+            parseFloat(el['Pace (seconds)']),
+          ]);
+        });
+
+        const plotData = google.visualization.arrayToDataTable(chartData);
+
+        const options = {
+          title: 'Pace (seconds)',
+          hAxis: { title: 'Distance (meters)' },
+          curveType: 'function',
+          legend: { position: 'bottom' },
+          series: {
+            0: { color: '#25BE25' },
+          },
+        };
+
+        const chart = new google.visualization.ScatterChart(
+          document.getElementById('chart-area-pace')
+        );
+
+        chart.draw(plotData, options);
+      };
+
+      const drawChartHeartRate = (data) => {
+        const chartData = [['time', 'pace']];
+        data.forEach((el) => {
+          chartData.push([
+            parseFloat(el['Time (seconds)']),
+            parseFloat(el['Heart Rate']),
+          ]);
+        });
+
+        const plotData = google.visualization.arrayToDataTable(chartData);
+
+        const options = {
+          title: 'Heart Rate',
+          hAxis: { title: 'Time (seconds)' },
+          curveType: 'function',
+          legend: { position: 'bottom' },
+          series: {
+            0: { color: '#ff0000' },
+          },
+        };
+
+        const chart = new google.visualization.ScatterChart(
+          document.getElementById('chart-area-heartrate')
+        );
+
+        chart.draw(plotData, options);
+      };
+
+      const drawChartStroke = (data) => {
+        const chartData = [['time', 'Stroke Rate']];
+        data.forEach((el) => {
+          chartData.push([
+            parseFloat(el['Time (seconds)']),
+            parseFloat(el['Stroke Rate']),
+          ]);
+        });
+
+        const plotData = google.visualization.arrayToDataTable(chartData);
+
+        const options = {
+          title: 'Stroke Rate',
+          hAxis: { title: 'Time (seconds)' },
+          curveType: 'function',
+          legend: { position: 'bottom' },
+          series: {
+            0: { color: '#5555dd' },
+          },
+        };
+
+        const chart = new google.visualization.ScatterChart(
+          document.getElementById('chart-area-stroke')
+        );
+
+        chart.draw(plotData, options);
+      };
+
+      const drawChartDistance = (data) => {
+        const chartData = [['time', 'distance']];
+        data.forEach((el) => {
+          chartData.push([
+            parseFloat(el['Time (seconds)']),
+            parseFloat(el['Distance (meters)']),
+          ]);
+        });
+
+        const plotData = google.visualization.arrayToDataTable(chartData);
+
+        const options = {
+          title: 'Distance (meters)',
+          hAxis: { title: 'Time (seconds)' },
+          curveType: 'function',
+          legend: { position: 'bottom' },
+          series: {
+            0: { color: '#009900' },
+          },
+        };
+
+        const chart = new google.visualization.ScatterChart(
+          document.getElementById('chart-area-distance')
+        );
+
+        chart.draw(plotData, options);
+      };
+
+      const drawChart = (data) => {
+        drawChartPace(data);
+        drawChartHeartRate(data);
+        drawChartStroke(data);
+        drawChartDistance(data);
+      };
+
+      const initDraw = () => {
+        const lastData = localStorage.getItem('lastData');
+        if (lastData) {
+          conceptData = JSON.parse(lastData);
+          console.log(conceptData);
+          drawChart(conceptData);
+        }
+      };
+
+      google.charts.setOnLoadCallback(initDraw);
+
+      document
+        .getElementById('btn-file')
+        .addEventListener('click', function () {
+          event.preventDefault();
+          document.getElementById('fileinput').click();
+        });
+
+      document
+        .getElementById('fileinput')
+        .addEventListener('change', upload, false);
+    </script>
+  </body>
+</html>
