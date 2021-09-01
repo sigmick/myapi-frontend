@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-KyZXEAg3QhqLMpG8r+8fhAXLRk2vvoC2f3B09zVXn8CA5QIVfZOJ3BCsw2P0p/We"
+      crossorigin="anonymous"
+    />
+
+    <title>Auth</title>
+    <style>
+      .center {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      .circle {
+        border-radius: 50%;
+      }
+
+      .card-login {
+        margin-left: auto;
+        margin-right: auto;
+        width: 30rem;
+        display: none;
+        background-color: #f1f1f1;
+      }
+
+      .card-signup {
+        margin-left: auto;
+        margin-right: auto;
+        width: 30rem;
+        display: none;
+        background-color: #e8cccc;
+      }
+
+      .card-profile {
+        margin-left: auto;
+        margin-right: auto;
+        width: 30rem;
+        display: none;
+        background-color: #e8cccc;
+      }
+
+      .btn-showSignup,
+      .btn-showLogin,
+      .btn-logout {
+        float: right;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container m-5">
+      <div class="card card-login p-3">
+        <h5 class="card-title">Log in</h5>
+        <form id="login-form" class="bg-custom-1">
+          <div class="form-group mt-3">
+            <label for="user-email">Email address</label>
+            <input
+              type="email"
+              class="form-control"
+              id="user-email"
+              aria-describedby="emailHelp"
+              placeholder="Enter email"
+              required
+            />
+          </div>
+          <div class="form-group mt-3">
+            <label for="user-password">Password</label>
+            <input
+              type="password"
+              class="form-control"
+              id="user-password"
+              placeholder="Password"
+              required
+            />
+          </div>
+          <button class="btn btn-primary mt-3" id="btn-login">Log in</button>
+        </form>
+
+        <div class="mb-3">
+          <a class="btn-showSignup" id="btn-showSignup">sign up</a>
+        </div>
+      </div>
+
+      <div class="card card-signup p-3">
+        <h5 class="card-title">Sign up</h5>
+        <form id="signup-form">
+          <div class="form-group mt-3">
+            <label for="user-email-signup">Email address</label>
+            <input
+              type="email"
+              class="form-control"
+              id="user-email-signup"
+              aria-describedby="emailHelp"
+              placeholder="Enter email"
+              required
+            />
+          </div>
+          <div class="form-group mt-3">
+            <label for="user-password-signup">Password</label>
+            <input
+              type="password"
+              class="form-control"
+              id="user-password-signup"
+              placeholder="Password"
+              required
+            />
+          </div>
+
+          <div class="form-group mt-3">
+            <label for="user-fullname-signup">Full name</label>
+            <input
+              type="text"
+              class="form-control"
+              id="user-fullname-signup"
+              aria-describedby="emailHelp"
+              placeholder="Enter Full name"
+              required
+            />
+          </div>
+          <button class="btn btn-primary mt-3">Sign up</button>
+        </form>
+        <div class="mb-3">
+          <a class="btn-showLogin" id="btn-showLogin">Log in</a>
+        </div>
+      </div>
+
+      <div class="card card-profile p-3">
+        <h5 class="card-title">Hello , <span id="user-fullname"></span></h5>
+        <div class="mb-3">
+          <a class="btn-logout" id="btn-logout">Log out</a>
+        </div>
+      </div>
+    </div>
+
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-U1DAWAznBHeqEIlVSCgzq+c9gqGAJn5c/t99JyeKa9xxaYpSvHU5awsuZVVFIhvj"
+      crossorigin="anonymous"
+    ></script>
+
+    <script
+      src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+      integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+      crossorigin="anonymous"
+    ></script>
+
+    <script>
+      const panelLogin = document.querySelector('.card-login');
+      const panelSignup = document.querySelector('.card-signup');
+      const panelProfile = document.querySelector('.card-profile');
+      const userFullnameElement = document.getElementById('user-fullname');
+
+      // check Authorization ============================================
+      const checkAuth = function () {
+        const token = localStorage.getItem('token');
+
+        if (!token) {
+          userFullnameElement.innerHTML = '';
+          panelLogin.style.display = 'block';
+          panelSignup.style.display = 'none';
+          panelProfile.style.display = 'none';
+          return;
+        }
+
+        fetch('https://mick-api.herokuapp.com/auth/username', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer ' + token,
+          },
+        })
+          .then((response) => {
+            if (!response.ok) throw new Error(response.statusText);
+            return response.json();
+          })
+          .then((data) => {
+            console.log(data);
+            userFullnameElement.innerHTML = data.status;
+            panelLogin.style.display = 'none';
+            panelSignup.style.display = 'none';
+            panelProfile.style.display = 'block';
+          })
+          .catch((error) => {
+            console.log(error);
+            alert(error);
+          });
+      };
+
+      // Login  ============================================
+      const login = function (email, password) {
+        const data = { email, password };
+        fetch('https://mick-api.herokuapp.com/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        })
+          .then((response) => {
+            if (!response.ok) throw new Error(response.statusText);
+            return response.json();
+          })
+          .then((data) => {
+            console.log(data);
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('userId', data.userId);
+            checkAuth();
+          })
+          .catch((error) => {
+            console.log(error);
+            alert(error);
+          });
+      };
+
+      // Log out ============================================
+      const logout = function () {
+        localStorage.removeItem('token');
+        localStorage.removeItem('userId');
+        checkAuth();
+      };
+
+      // Sign up  ============================================
+      const signup = function (email, password, name) {
+        const data = { email, password, name };
+        fetch('https://mick-api.herokuapp.com/auth/signup', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        })
+          .then((response) => {
+            if (!response.ok) throw new Error(response.statusText);
+            return response.json();
+          })
+          .then((data) => {
+            console.log(data);
+            login(email,password);
+          })
+          .catch((error) => {
+            console.log(error);
+            alert(error);
+          });
+      };
+
+      document
+        .getElementById('btn-showSignup')
+        .addEventListener('click', function (e) {
+          panelLogin.style.display = 'none';
+          panelSignup.style.display = 'block';
+          panelProfile.style.display = 'none';
+        });
+
+      document
+        .getElementById('btn-showLogin')
+        .addEventListener('click', function (e) {
+          panelSignup.style.display = 'none';
+          panelLogin.style.display = 'block';
+          panelProfile.style.display = 'none';
+        });
+
+      document
+        .getElementById('btn-logout')
+        .addEventListener('click', function (e) {
+          logout();
+        });
+
+      document
+        .getElementById('login-form')
+        .addEventListener('submit', function (e) {
+          e.preventDefault();
+          const email = document.getElementById('user-email').value;
+          const password = document.getElementById('user-password').value;
+          login(email, password);
+        });
+
+      document
+        .getElementById('signup-form')
+        .addEventListener('submit', function (e) {
+          e.preventDefault();
+          const email = document.getElementById('user-email-signup').value;
+          const password = document.getElementById(
+            'user-password-signup'
+          ).value;
+          const name = document.getElementById('user-fullname-signup').value;
+          signup(email, password, name);
+        });
+
+      checkAuth();
+    </script>
+  </body>
+</html>
