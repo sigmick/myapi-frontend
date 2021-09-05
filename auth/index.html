@@ -22,6 +22,9 @@
       .circle {
         border-radius: 50%;
       }
+      .rounded {
+        border-radius: 5px;
+      }
 
       .card-login {
         margin-left: auto;
@@ -47,11 +50,32 @@
         background-color: #aff5a9;
       }
 
+      .card-profile-image {
+        margin-left: auto;
+        margin-right: auto;
+        width: 16rem;
+      }
+
+      .profile-img-wrap{
+        height: 10rem;
+        background-color: #f5f5f5;
+        overflow: hidden;
+      }
+
       .btn-showSignup,
       .btn-showLogin,
       .btn-logout {
         float: right;
         cursor: pointer;
+      }
+
+      input[type='file'] {
+        opacity: 0; /* make transparent */
+        z-index: -1; /* move under anything else */
+        position: absolute; /* don't let it take up space */
+      }
+      input[type='file']:focus + label {
+        outline: 2px solid; /* example focus style */
       }
     </style>
   </head>
@@ -134,6 +158,57 @@
 
       <div class="card card-profile p-3">
         <h5 class="card-title">Hello , <span id="user-fullname"></span></h5>
+        <hr />
+        <div class="card card-profile-image p-3 center">
+          <div class="profile-img-wrap p-2">
+            <img id="profile-img" class="rounded center hidden" src="" alt="" />
+          </div>
+          <form id="upload-form" class="center">
+            <div class="form-group">
+              <input
+                type="file"
+                class="custom-file-input m-3"
+                id="fileinput"
+                name="file"
+              />
+            </div>
+            <button id="btn-file" class="center btn btn-sm btn-primary m-1">Select Photo</button>
+          </form>
+        </div>
+        <form id="profile-form">
+          <div class="form-group mt-3">
+            <label for="user-fullname-profile">Full name</label>
+            <input
+              type="text"
+              class="form-control"
+              id="user-fullname-profile"
+              aria-describedby=""
+              placeholder="Enter Full name"
+              required
+            />
+          </div>
+          <div class="form-group mt-3">
+            <label for="user-birthdate-profile">Date of Birth</label>
+            <input
+              type="date"
+              class="form-control"
+              id="user-birthdate-profile"
+              name="user-birthdate-profile"
+            />
+          </div>
+          <div class="form-group mt-3">
+            <label for="user-mobile-profile">Mobile</label>
+            <input
+              type="text"
+              class="form-control"
+              id="user-mobile-profile"
+              aria-describedby=""
+              placeholder="Enter mobile no."
+              required
+            />
+          </div>
+          <button class="btn btn-primary mt-3">Update Profile</button>
+        </form>
         <div class="mb-3">
           <a class="btn-logout" id="btn-logout">Log out</a>
         </div>
@@ -153,14 +228,28 @@
     ></script>
 
     <script>
+      // const serverURL = 'http://localhost:3000';
+      const serverURL = 'https://mick-api.herokuapp.com';
+
       const panelLogin = document.querySelector('.card-login');
       const panelSignup = document.querySelector('.card-signup');
       const panelProfile = document.querySelector('.card-profile');
+
       const userFullnameElement = document.getElementById('user-fullname');
+      const userProfileFullNameInput = document.getElementById(
+        'user-fullname-profile'
+      );
+      const userProfileBirthdateInput = document.getElementById(
+        'user-birthdate-profile'
+      );
+      const userProfileMobileInput = document.getElementById(
+        'user-mobile-profile'
+      );
 
       // check Authorization ============================================
       const checkAuth = function () {
         const token = localStorage.getItem('token');
+        let hasError = false;
 
         if (!token) {
           userFullnameElement.innerHTML = '';
@@ -170,7 +259,7 @@
           return;
         }
 
-        fetch('https://mick-api.herokuapp.com/auth/username', {
+        fetch(serverURL + '/auth/profile', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -178,15 +267,31 @@
           },
         })
           .then((response) => {
-            if (!response.ok) throw new Error(response.statusText);
+            if (!response.ok) {
+              hasError = true;
+            }
             return response.json();
           })
           .then((data) => {
             console.log(data);
-            userFullnameElement.innerHTML = data.status;
+            if (hasError) {
+              throw new Error(data.message);
+            }
+            userFullnameElement.innerHTML = data.fullname;
+            userProfileFullNameInput.value = data.fullname;
+            userProfileBirthdateInput.value =
+              data.birthdate?.substr(0, 10) || '';
+            userProfileMobileInput.value = data.mobile || '';
+
             panelLogin.style.display = 'none';
             panelSignup.style.display = 'none';
             panelProfile.style.display = 'block';
+
+            document.getElementById('profile-img').src =
+              serverURL + '/profile/img/' + data.userId + '.png';
+            document.getElementById('profile-img').style.height = '100%';
+            document.getElementById('profile-img').classList.remove('hidden');
+            
           })
           .catch((error) => {
             console.log(error);
@@ -198,17 +303,24 @@
       // Login  ============================================
       const login = function (email, password) {
         const data = { email, password };
-        fetch('https://mick-api.herokuapp.com/auth/login', {
+        let hasError = false;
+
+        fetch(serverURL + '/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data),
         })
           .then((response) => {
-            if (!response.ok) throw new Error(response.statusText);
+            if (!response.ok) {
+              hasError = true;
+            }
             return response.json();
           })
           .then((data) => {
             console.log(data);
+            if (hasError) {
+              throw new Error(data.message);
+            }
             localStorage.setItem('token', data.token);
             localStorage.setItem('userId', data.userId);
             checkAuth();
@@ -223,24 +335,99 @@
       const logout = function () {
         localStorage.removeItem('token');
         localStorage.removeItem('userId');
+        document.getElementById('profile-img').src ='';
         checkAuth();
       };
 
       // Sign up  ============================================
       const signup = function (email, password, name) {
         const data = { email, password, name };
-        fetch('https://mick-api.herokuapp.com/auth/signup', {
+        let hasError = false;
+
+        fetch(serverURL + '/auth/signup', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data),
         })
           .then((response) => {
-            if (!response.ok) throw new Error(response.statusText);
+            if (!response.ok) {
+              hasError = true;
+            }
             return response.json();
           })
           .then((data) => {
             console.log(data);
-            login(email,password);
+            if (hasError) {
+              throw new Error(data.data[0].msg);
+            }
+            login(email, password);
+          })
+          .catch((error) => {
+            console.log(error);
+            alert(error);
+          });
+      };
+
+      // Update Profile  ============================================
+      const updateProfile = function (name, mobile, birthdate) {
+        const token = localStorage.getItem('token');
+        const data = { name, mobile, birthdate };
+        let hasError = false;
+
+        fetch(serverURL + '/auth/profile', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer ' + token,
+          },
+          body: JSON.stringify(data),
+        })
+          .then((response) => {
+            if (!response.ok) {
+              hasError = true;
+            }
+            return response.json();
+          })
+          .then((data) => {
+            console.log(data);
+            if (hasError) {
+              throw new Error(data.message);
+            }
+            alert(data.message);
+            checkAuth();
+          })
+          .catch((error) => {
+            console.log(error);
+            alert(error);
+          });
+      };
+
+      // Upload Photo ==========================================
+      const uploadPhoto = () => {
+        const token = localStorage.getItem('token');
+        let formdata = new FormData();
+        formdata.append('file', document.getElementById('fileinput').files[0]);
+
+        fetch(serverURL + '/upload', {
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer ' + token,
+          },
+          body: formdata,
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.filename) {
+
+              console.log(serverURL + '/profile/img/' + data.filename);
+              document.getElementById('profile-img').src =
+                serverURL + '/profile/img/' + data.filename + '?t=' + new Date().getTime();
+              document.getElementById('profile-img').style.height = '100%';
+              document.getElementById('profile-img').classList.remove('hidden');
+            } else {
+              console.log(data.message);
+              alert(data.message);
+            }
           })
           .catch((error) => {
             console.log(error);
@@ -290,6 +477,31 @@
           const name = document.getElementById('user-fullname-signup').value;
           signup(email, password, name);
         });
+
+      document
+        .getElementById('profile-form')
+        .addEventListener('submit', function (e) {
+          e.preventDefault();
+          const name = document.getElementById('user-fullname-profile').value;
+          const mobile = document.getElementById('user-mobile-profile').value;
+          const birthdate = document.getElementById(
+            'user-birthdate-profile'
+          ).value;
+
+          updateProfile(name, mobile, birthdate);
+        });
+
+      document
+        .getElementById('btn-file')
+        .addEventListener('click', function () {
+          event.preventDefault();
+          document.getElementById('fileinput').click();
+        });
+
+      document
+        .getElementById('fileinput')
+        .addEventListener('change', uploadPhoto, false);
+
 
       checkAuth();
     </script>
